@@ -10,6 +10,6 @@ Checker: Instance.o Checker.o
 	g++ -o Checker Checker.o Instance.o
 
 clean:
-	rm Checker
+	rm -f Checker
 	rm -f *.o
 	rm -rf __pycache__
