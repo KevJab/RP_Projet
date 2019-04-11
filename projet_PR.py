@@ -2,8 +2,12 @@ from instance import *
 from random import *
 from itertools import *
 from copy import deepcopy
-
 import sys
+
+
+#####################################################
+#					EXERCICE 1						#
+#####################################################
 
 def select_p_percent(filename, percent):
 	f = open(filename, 'r')
@@ -23,10 +27,7 @@ def select_p_percent(filename, percent):
 			p = Photo(lines[i][0], arg, i-1)
 			inst.add_photo(p)
 	return inst
-
-#####################################################
-#					EXERCICE 2						#
-#####################################################
+	
 
 def evaluate(slides):
 	score = 0
@@ -171,48 +172,130 @@ def desc_best(sol):
 		alea = randint(0,1)  # 0 for horizontal permuation, 1 for vertical permutation
 		
 		if alea == 0:  # 1st way of defining neighbors -> permutation of 2 horizontal pictures 
-			to_permute = list(combinations(h_slide, 2))
-			for i,j in to_permute:
-				slides = deepcopy(sol.slides)
-				t = slides[i]
-				slides[i] = slides[j]
-				slides[j] = t
-				res = evaluate(slides)
-				
-				if res > x :  # We found a better solution we stop here
-					x = res
-					sol.slides = slides
-					break
+			slides, res = first_neighbors(sol.slides, h_slide, x)
 					
 		else:  # 2nd way of defining neighbors -> permutation of 1 of the 2 vertical picture inside a slide with another vertical slide
-			to_permute = list(combinations(v_slide, 2))
-			for i,j in to_permute:
-				slides = deepcopy(sol.slides)  # We permute 1st picture of 1st slide with 2nd picture of 2nd slide
-				t = slides[i].p1
-				slides[i] = Slide(slides[i].p2, slides[j].p1)
-				slides[j] = Slide(slides[j].p2, t)
-				res = evaluate(slides)
-				if res > x :  # We found a better solution we stop here
-					x = res
-					sol.slides = slides
-					break
-					
-				slides = deepcopy(sol.slides)  # We permute 1st picture of 1st slide with 1st picture of seconde slide
-				t = slides[i].p1
-				slides[i] = Slide(slides[j].p2, slides[i].p2)
-				slides[j] = Slide(slides[j].p1, t)
-				res = evaluate(slides)
-				if res > x :  # We found a better solution we stop here
-					x = res
-					sol.slides = slides
-					break
+			slides, res = second_neighbors(sol.slides, v_slide, x)
 			
-		print("Best solution AFTER looking at neighbors =", x)
+		if res > 0:
+			x = res
+			sol.slides = slides
+			
+		print("Better solution AFTER looking at neighbors =", x)
 		print()
+		
 		if x == sol_glouton:
 			break
 	return x
 
+	
+def first_neighbors(s, h, x):
+	to_permute = list(combinations(h, 2))
+	for i,j in to_permute:
+		slides = deepcopy(s)
+		t = slides[i]
+		slides[i] = slides[j]
+		slides[j] = t
+		res = evaluate(slides)
+				
+		if res > x :  # We found a better solution we stop here
+			return slides, res
+			
+	return None, -1
+
+def second_neighbors(s, v, x):
+	to_permute = list(combinations(v, 2))
+	for i,j in to_permute:
+		slides = deepcopy(s)  # We permute 1st picture of 1st slide with 2nd picture of 2nd slide
+		t = slides[i].p1
+		slides[i] = Slide(slides[i].p2, slides[j].p1)
+		slides[j] = Slide(slides[j].p2, t)
+		res = evaluate(slides)
+		
+		if res > x :  # We found a better solution we stop here
+			return slides, res
+			
+		slides = deepcopy(s)  # We permute 1st picture of 1st slide with 1st picture of seconde slide
+		t = slides[i].p1
+		slides[i] = Slide(slides[j].p2, slides[i].p2)
+		slides[j] = Slide(slides[j].p1, t)
+		res = evaluate(slides)
+		
+		if res > x :  # We found a better solution we stop here
+			return slides, res
+	
+	return None, -1
+	
+	
+def algo_g(nb_species, nb_generations, inst, n):
+	populations = create_species(inst, n, nb_species)
+	for i in range(nb_generations):
+		print("Generation", i, ":")
+		populations = selection_mu_lambda(populations, 0.6, int(len(populations)*0.2))
+		creation = create_species(inst, n, int(nb_species * 0.4))
+		for j in creation:
+			populations.append(j)
+		for j in populations:
+			if random() > 0.5:
+				mutate(j)
+		print()
+	return max(populations, key = lambda x: x.fitness)
+	
+	
+def create_species(inst, n, nb):
+	species = []
+	for i in range(nb):
+		species.append(Specie(glouton_opti(inst, n)))
+	return species
+		
+
+def selection_mu_lambda(s, p, l):
+	new_species = []
+	for i in s:
+		if i.eval == 0:
+			i.eval = evaluate(i.slides)
+		print("Fitness", i.eval)
+	
+	pourcentage = int(p * len(s))
+	s = sorted(s, key=lambda x: x.eval, reverse=True)[0:l]
+
+	for i in s:
+		new_species.append(i)
+		
+	while len(new_species) < pourcentage:
+		new_species.append(s[randint(0, len(s) - 1)])
+		
+	return new_species
+	
+	
+def mutate(s):
+	h_slide = []
+	v_slide = []
+	for i in range(len(s.slides)):
+		if s.slides[i].p2.p_id == -1:  # If it is an horizontal picture
+			h_slide.append(i)
+		else:
+			v_slide.append(i)
+			
+	alea = randint(0,1)  # 0 for horizontal permuation, 1 for vertical permutation
+		
+	if alea == 0:  # 1st way of defining neighbors -> permutation of 2 horizontal pictures 
+		slides, res = first_neighbors(s.slides, h_slide, s.eval)
+				
+	else:  # 2nd way of defining neighbors -> permutation of 1 of the 2 vertical picture inside a slide with another vertical slide
+		slides, res = second_neighbors(s.slides, v_slide, s.eval)
+		
+	if res > -1:
+		s.slides = slides
+		s.eval = res
+			
+	
+	
+
+
+#####################################################
+#						MAIN						#
+#####################################################
 
 def main(argv):
 	f = "Inputs/c_memorable_moments.txt"
@@ -221,11 +304,12 @@ def main(argv):
 	instance = select_p_percent(f, 20)
 	#sol = Solution(instance, h_before_v, 0, "H_puis_V.sol")
 	#sol = Solution(instance, glouton, 0, "glouton.sol")
-	sol = Solution(instance, glouton_opti, 10, "glouton_opt.sol")
-	sol.eval = evaluate(sol.slides)
-	print("Évaluation de la solution de %s : %d" %(f, sol.eval))
-	res = desc_best(sol)
-	print("Meilleur score apres descente stochastique :", res)
+	#sol = Solution(instance, glouton_opti, 5, "glouton_opt.sol")
+	#sol.eval = evaluate(sol.slides)
+	#print("Évaluation de la solution de", f, ":", sol.eval)
+	#res = desc_best(sol)
+	#print("Meilleur score apres descente stochastique :", res)
+	b = algo_g(10, 10, instance, 10)
 	sol.output()
 	
 

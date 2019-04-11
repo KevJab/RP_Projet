@@ -47,6 +47,7 @@ class Slide:
 			return str(self.p1.p_id)
 		return str(self.p1.p_id) + " " + str(self.p2.p_id)
 
+
 class Solution:
 	def __init__(self, instance, func, n, out_file="output.sol"):
 		self.instance = instance	# the instance to solve
@@ -70,3 +71,9 @@ class Solution:
 		sol.write(str(len(self.slides)) + "\n")
 		for slide in self.slides:
 			sol.write(str(slide) + "\n")
+
+
+class Specie:
+	def __init__(self, s):
+		self.slides = s
+		self.eval = 0
