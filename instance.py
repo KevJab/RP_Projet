@@ -48,16 +48,21 @@ class Slide:
 		return str(self.p1.p_id) + " " + str(self.p2.p_id)
 
 class Solution:
-	def __init__(self, instance, func, out_file="output.sol"):
+	def __init__(self, instance, func, n, out_file="output.sol"):
 		self.instance = instance	# the instance to solve
 		self.func = func			# the slide-sorting function
 		self.out_file = out_file	# the file to write (has to be .sol)
 		self.slides = []			# the list of slides
+		self.arg = n                # arg for self.func
 		self.find_solution()		# finds the solution according to self.func
+		self.eval = 0				# score of the solution
 		#self.output()
 
 	def find_solution(self):
-		self.slides = self.func(self.instance)
+		if self.arg == 0:
+			self.slides = self.func(self.instance)
+		else:
+			self.slides = self.func(self.instance, self.arg)
 
 	def output(self):		#writes the solution in the output file
 		sol = open(self.out_file, 'w+')
