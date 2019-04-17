@@ -236,42 +236,42 @@ def second_neighbors(s, v, x):
     
     
 def algo_g(nb_species, nb_generations, inst, n):
-    populations = create_species(inst, n, nb_species)
-    for i in range(nb_generations):
+    populations = create_species(inst, n, nb_species)  # Initialise the population
+    for i in range(nb_generations):  # For each generation
         print("Generation", i, ":")
-        populations = selection_mu_lambda(populations, 0.8, int(len(populations)*0.2))
-        creation = create_species(inst, n, int(nb_species * 0.2))
+        populations = selection_mu_lambda(populations, 0.8, int(len(populations)*0.2))  # Select 80% of species among the bests of them 
+        creation = create_species(inst, n, int(nb_species * 0.2))  # Fill the missing 20% with totally new species
         for j in creation:
             populations.append(j)
         for k in populations:
-            if random() > 0.5:
+            if random() > 0.5:  # Each specie has a 50% probability to mutate
                 mutate(k)
             print("Fitness of specie", k.name, "is :", k.eval)
         print()
 
-    return max(populations, key = lambda x: x.eval)
+    return max(populations, key = lambda x: x.eval)  # Return the specie with the highiest fitness
     
     
 def create_species(inst, n, nb):
     species = []
-    for i in range(nb):
+    for i in range(nb):  # For each specie with create
         instance = deepcopy(inst)
-        s = Specie(glouton_opti(instance, n))
-        s.eval = evaluate(s.slides)
-        s.name = str(i)
-        species.append(s)
+        s = Specie(glouton_opti(instance, n))  # we calculate his solution
+        s.eval = evaluate(s.slides)  # Then evaluate this solution
+        s.name = str(i)  # Give him a name
+        species.append(s)  # Add it to the list of new species 
     return species
         
 
 def selection_mu_lambda(s, p, l):
     new_species = []
-    pourcentage = int(p * len(s))
-    s = sorted(s, key=lambda x: x.eval, reverse=True)[0:l]
+    pourcentage = int(p * len(s))  # Number of species we have to select
+    s = sorted(s, key=lambda x: x.eval, reverse=True)[0:l]  # We only keep the l better species
 
-    for i in s:
+    for i in s:  # We add them all, once
         new_species.append(i)
         
-    while len(new_species) < pourcentage:
+    while len(new_species) < pourcentage:  # Then while we didn't select enough we select new specie
         new_species.append(deepcopy(s[randint(0, len(s) - 1)]))
         
     return new_species
@@ -288,15 +288,15 @@ def mutate(s):
             
     alea = randint(0,1)  # 0 for horizontal permuation, 1 for vertical permutation
         
-    if alea == 0:  # 1st way of defining neighbors -> permutation of 2 horizontal pictures 
-        l = list(combinations(h_slide, 2))
-        rand = l[randint(0,len(l)-1)]
-        t = s.slides[rand[0]]
+    if alea == 0:  # permutation of 2 horizontal pictures 
+        l = list(combinations(h_slide, 2))  # All possible permutations
+        rand = l[randint(0,len(l)-1)]  # We choose one of them randomly
+        t = s.slides[rand[0]]  # Then we do the permutation
         s.slides[rand[0]] = s.slides[rand[1]]
         s.slides[rand[1]] = t
                 
-    else:  # 2nd way of defining neighbors -> permutation of 1 of the 2 vertical picture inside a slide with another vertical slide
-        alea = randint(0,1)
+    else:  # permutation of 1 of the 2 vertical picture inside a slide with another vertical slide
+        alea = randint(0,1)  # Allow us to decide if we switch the 1st picture of the first slide with the 1st or with the second picture of the second slide
         l = list(combinations(v_slide, 2))
         rand = l[randint(0,len(l)-1)]
         if alea == 0:
@@ -308,8 +308,8 @@ def mutate(s):
             s.slides[rand[0]] = Slide(s.slides[rand[1]].p2, s.slides[rand[0]].p2)
             s.slides[rand[1]] = Slide(s.slides[rand[1]].p1, t)
 
-    s.eval = evaluate(s.slides)
-    s.name = s.name + str(rand[0]) + str(rand[1])
+    s.eval = evaluate(s.slides)  # We recalculate the score of the presentation of our specie
+    s.name = s.name + str(rand[0]) + str(rand[1])  # We change his name
     
     
 
@@ -330,7 +330,7 @@ def main(argv):
     #print("Évaluation de la solution de", f, ":", sol.eval)
     #res = desc_best(sol)
     #print("Meilleur score apres descente stochastique :", res)
-    b = algo_g(100, 200, instance, 10)
+    b = algo_g(50, 50, instance, 10)
     print(b)
     #sol.output()
     
