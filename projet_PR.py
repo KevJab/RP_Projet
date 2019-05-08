@@ -5,7 +5,8 @@ from time import time
 from copy import deepcopy
 import sys
 import matplotlib.pyplot as plt
-
+from gurobipy import *
+import numpy as np
 
 #####################################################
 #                    EXERCICE 1                     #
@@ -396,7 +397,7 @@ def solveurPL(vignettes):
     obj =0
     for i in range(0,len(vignettes)):
         for j in range(0,len(vignettes)):
-            obj+= score(vignettes,i,j)*x[i*len(vignettes)+j]
+            obj+= score_transition(vignettes[i].key_words,vignettes[j].key_words)*x[i*len(vignettes)+j]
 
     m.setObjective(obj,GRB.MAXIMIZE)
     m.optimize()
@@ -435,7 +436,7 @@ def graph(inst, n):
 
 def main(argv):
     #f = "Inputs\\c_memorable_moments.txt"
-    f = "Inputs\\b_lovely_landscapes.txt"
+    f = "Inputs/b_lovely_landscapes.txt"
     #f = "Inputs\\a_example.txt"
     instance = select_p_percent(f, 0.03)
     #sol = Solution(instance, h_before_v, 0, "H_puis_V.sol")
@@ -449,7 +450,7 @@ def main(argv):
     #print(b)
     #sol.output()
     #graph(instance, 100)
-    solveurPL(inst.tabH)
+    solveurPL(instance.tabH)
 
 
 
