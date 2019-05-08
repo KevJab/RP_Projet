@@ -1,18 +1,20 @@
 from instance import *
 from random import *
 from itertools import *
+from time import time
 from copy import deepcopy
 import sys
+import matplotlib.pyplot as plt
 
 
 #####################################################
-#                    EXERCICE 1                        #
+#                    EXERCICE 1                     #
 #####################################################
 
 def select_p_percent(filename, percent):
     f = open(filename, 'r')
     lines = f.readlines()
-    nb_photos = len(lines) * percent // 100  # Number of lines we will read
+    nb_photos = len(lines) * percent / 100  # Number of lines we will read
 
     inst = Instance()
 
@@ -27,7 +29,7 @@ def select_p_percent(filename, percent):
             p = Photo(lines[i][0], arg, i-1)
             inst.add_photo(p)
     return inst
-    
+
 
 def evaluate(slides):
     score = 0
@@ -52,13 +54,13 @@ def h_before_v(inst):  # Solution with all horizontal slides before vertical sli
         if(i != len(inst.tabV)-1):  # This way there are no problems even if there is an odd number of vertical pictures
             slides.append(Slide(inst.tabV[i], inst.tabV[i+1]))
     return slides
-    
+
 
 #####################################################
-#                    EXERCICE 3                        #
+#                    EXERCICE 3                     #
 #####################################################
 
-def glouton(inst):
+def glouton(inst, max_time = -1):
     solution = []
     h_or_v = randint(0, 1)  # Randomly choose to pick a horizontal or vertical picture
     len_solution = len(inst.tabH) + len(inst.tabV)//2
@@ -80,9 +82,15 @@ def glouton(inst):
             inst.tabV.remove(inst.tabV[alea1])
 
     all_permutation = deepcopy(list(combinations(inst.tabV, 2)))  # Allow to have all possible combinations for vertical pictures without double (there are not (1,2) (2,1) only (1,2)
+    print(all_permutation, solution)
+
+    a = time()
+    b = time()
 
     while len(solution) < len_solution :  # While there are not enough slides to make a solution
-        maxi = -1  
+        if b-a > max_time and max_time > 0:
+            break
+        maxi = -1
         max_photo = None
         for i in inst.tabH:  # for all horizontal pictures, we will keep the one that maximise the score of the transition
             s = score_transition(solution[len(solution) - 1].key_words, Slide(i).key_words)
@@ -105,10 +113,12 @@ def glouton(inst):
             for i,j in to_remove:
                 all_permutation.remove((i,j))
         solution.append(max_photo)
+        b = time()
+    print(solution)
     return solution
-    
-    
-def glouton_opti(inst, n):
+
+
+def glouton_opti(inst, n, max_time = -1):
     solution = []
     h_or_v = randint(0, 1)
     len_solution = len(inst.tabH) + len(inst.tabV)//2
@@ -131,7 +141,12 @@ def glouton_opti(inst, n):
 
     all_permutation = list(combinations(inst.tabV, 2))
 
+    a = time()
+    b = time()
+
     while len(solution) < len_solution :
+        if b-a > max_time and max_time > 0:
+            break
         maxi = -1
         max_photo = None
         for i in sample(inst.tabH, min(len(inst.tabH), n)):  # We will take the best horizontal pictures among "n" of them
@@ -155,48 +170,52 @@ def glouton_opti(inst, n):
             for i,j in to_remove:
                 all_permutation.remove((i,j))
         solution.append(max_photo)
+        b = time()
     return solution
-    
+
 
 #####################################################
-#                    EXERCICE 4                        #
+#                    EXERCICE 4                     #
 #####################################################
 
-def desc_best(sol):
-    x = sol.eval
-            
+def desc_best(sol, max_time = -1):
+    x = evaluate(sol)
+    a = time()
+    b = time()
     while True:
+        if b-a > max_time and max_time > 0:
+            break
         print("Best solution BEFORE looking at neighbors =", x)
-        
+
         h_slide = []
         v_slide = []
-        for i in range(len(sol.slides)):
-            if sol.slides[i].p2.p_id == -1:  # If it is an horizontal picture
+        for i in range(len(sol)):
+            if sol[i].p2.p_id == -1:  # If it is an horizontal picture
                 h_slide.append(i)
             else:
                 v_slide.append(i)
-        
+
         sol_glouton = x  # Best solution before looking at the neighbors
         alea = randint(0,1)  # 0 for horizontal permuation, 1 for vertical permutation
-        
-        if alea == 0:  # 1st way of defining neighbors -> permutation of 2 horizontal pictures 
-            slides, res = first_neighbors(sol.slides, h_slide, x)
-                    
+
+        if alea == 0:  # 1st way of defining neighbors -> permutation of 2 horizontal pictures
+            slides, res = first_neighbors(sol, h_slide, x)
+
         else:  # 2nd way of defining neighbors -> permutation of 1 of the 2 vertical picture inside a slide with another vertical slide
-            slides, res = second_neighbors(sol.slides, v_slide, x)
-            
+            slides, res = second_neighbors(sol, v_slide, x)
+
         if res > 0:
             x = res
-            sol.slides = slides
-            
+            sol = slides
+        b = time()
         print("Better solution AFTER looking at neighbors =", x)
         print()
-        
+
         if x == sol_glouton:
             break
     return x
 
-    
+
 def first_neighbors(s, h, x):
     to_permute = list(combinations(h, 2))
     for i,j in to_permute:
@@ -205,10 +224,10 @@ def first_neighbors(s, h, x):
         slides[i] = slides[j]
         slides[j] = t
         res = evaluate(slides)
-                
+
         if res > x :  # We found a better solution we stop here
             return slides, res
-            
+
     return None, -1
 
 def second_neighbors(s, v, x):
@@ -219,27 +238,32 @@ def second_neighbors(s, v, x):
         slides[i] = Slide(slides[i].p2, slides[j].p1)
         slides[j] = Slide(slides[j].p2, t)
         res = evaluate(slides)
-        
+
         if res > x :  # We found a better solution we stop here
             return slides, res
-            
+
         slides = deepcopy(s)  # We permute 1st picture of 1st slide with 1st picture of seconde slide
         t = slides[i].p1
         slides[i] = Slide(slides[j].p2, slides[i].p2)
         slides[j] = Slide(slides[j].p1, t)
         res = evaluate(slides)
-        
+
         if res > x :  # We found a better solution we stop here
             return slides, res
-    
+
     return None, -1
-    
-    
-def algo_g(nb_species, nb_generations, inst, n):
+
+
+def algo_g(nb_species, nb_generations, inst, n, max_time = -1):
     populations = create_species(inst, n, nb_species)  # Initialise the population
+    print("Population initialized")
+    a = time()
+    b = time()
     for i in range(nb_generations):  # For each generation
+        if max_time > 0 and b - a > max_time:
+            break
         print("Generation", i, ":")
-        populations = selection_mu_lambda(populations, 0.8, int(len(populations)*0.2))  # Select 80% of species among the bests of them 
+        populations = selection_mu_lambda(populations, 0.8, int(len(populations)*0.2))  # Select 80% of species among the bests of them
         creation = create_species(inst, n, int(nb_species * 0.2))  # Fill the missing 20% with totally new species
         for j in creation:
             populations.append(j)
@@ -247,11 +271,12 @@ def algo_g(nb_species, nb_generations, inst, n):
             if random() > 0.5:  # Each specie has a 50% probability to mutate
                 mutate(k)
             print("Fitness of specie", k.name, "is :", k.eval)
+        b = time()
         print()
 
     return max(populations, key = lambda x: x.eval)  # Return the specie with the highiest fitness
-    
-    
+
+
 def create_species(inst, n, nb):
     species = []
     for i in range(nb):  # For each specie with create
@@ -259,9 +284,9 @@ def create_species(inst, n, nb):
         s = Specie(glouton_opti(instance, n))  # we calculate his solution
         s.eval = evaluate(s.slides)  # Then evaluate this solution
         s.name = str(i)  # Give him a name
-        species.append(s)  # Add it to the list of new species 
+        species.append(s)  # Add it to the list of new species
     return species
-        
+
 
 def selection_mu_lambda(s, p, l):
     new_species = []
@@ -270,13 +295,13 @@ def selection_mu_lambda(s, p, l):
 
     for i in s:  # We add them all, once
         new_species.append(i)
-        
+
     while len(new_species) < pourcentage:  # Then while we didn't select enough we select new specie
         new_species.append(deepcopy(s[randint(0, len(s) - 1)]))
-        
+
     return new_species
-    
-    
+
+
 def mutate(s):
     h_slide = []
     v_slide = []
@@ -285,16 +310,16 @@ def mutate(s):
             h_slide.append(i)
         else:
             v_slide.append(i)
-            
+
     alea = randint(0,1)  # 0 for horizontal permuation, 1 for vertical permutation
-        
-    if alea == 0:  # permutation of 2 horizontal pictures 
+
+    if alea == 0:  # permutation of 2 horizontal pictures
         l = list(combinations(h_slide, 2))  # All possible permutations
         rand = l[randint(0,len(l)-1)]  # We choose one of them randomly
         t = s.slides[rand[0]]  # Then we do the permutation
         s.slides[rand[0]] = s.slides[rand[1]]
         s.slides[rand[1]] = t
-                
+
     else:  # permutation of 1 of the 2 vertical picture inside a slide with another vertical slide
         alea = randint(0,1)  # Allow us to decide if we switch the 1st picture of the first slide with the 1st or with the second picture of the second slide
         l = list(combinations(v_slide, 2))
@@ -310,8 +335,98 @@ def mutate(s):
 
     s.eval = evaluate(s.slides)  # We recalculate the score of the presentation of our specie
     s.name = s.name + str(rand[0]) + str(rand[1])  # We change his name
-    
-    
+
+
+#####################################################
+#                    EXERCICE 8                     #
+#####################################################
+def solveurPL(vignettes):
+    # Range of plants and warehouses
+    m = Model("mogplex")
+
+    # declaration variables de decision
+    x = []
+    z = []
+
+    for i in range(0,len(vignettes)):
+        for j in range(0,len(vignettes)):
+            # xi correspond a une transition entre vi et vj
+            x.append(m.addVar(vtype=GRB.BINARY, lb=0, name="x%d" % (i*len(vignettes)+j)))
+
+    for i in range(0,len(vignettes)):
+        for j in range(0,len(vignettes)):
+            #Variable zi : elimination des sous tours par les flots
+            z.append(m.addVar(vtype=GRB.CONTINUOUS, lb=0, name="x%d" % (i*len(vignettes)+j)))
+
+    m.update()
+
+    obj = LinExpr();
+    obj =0
+
+    #Un seul arc sortant d'un sommet
+    for i in range(0,len(vignettes)):
+        m.addConstr(quicksum(x[i*len(vignettes)+j] for j in range(0,len(vignettes)))==1)
+        m.addConstr(quicksum(x[j*len(vignettes)+i] for j in range(0,len(vignettes)))==1)
+
+    #Contrainte du premier sommet
+    m.addConstr(quicksum(z[j] for j in range(1,len(vignettes))) == len(vignettes)-1)
+
+    for i in range(1,len(vignettes)):
+        i1 = np.arange(0,len(vignettes))
+        i1=np.delete(i1,i)
+        i1=np.delete(i1,0)
+        i2 = np.arange(0,len(vignettes))
+        i2=np.delete(i2,i)
+        m.addConstr(quicksum([z[i*len(vignettes)+j] for j in i1])+1 == quicksum([z[j*len(vignettes)+i] for j in i2]))
+
+    for i in range(0,len(vignettes)):
+        for j in range(0,len(vignettes)):
+            if(j != i and j != 0):
+                m.addConstr(z[i*len(vignettes)+j]+z[j*len(vignettes)+i] <= (len(vignettes)-1)*(x[i*len(vignettes)+j]+x[j*len(vignettes)+i]))
+
+
+    for i in range(0,len(vignettes)):
+        for j in range(0,len(vignettes)):
+            if(j != i and j != 0):
+                m.addConstr(z[i*len(vignettes)+j]>=0)
+
+    m.update()
+
+    obj = LinExpr();
+    obj =0
+    for i in range(0,len(vignettes)):
+        for j in range(0,len(vignettes)):
+            obj+= score(vignettes,i,j)*x[i*len(vignettes)+j]
+
+    m.setObjective(obj,GRB.MAXIMIZE)
+    m.optimize()
+
+    print("")
+    print('Solution optimale:')
+    print("")
+    return x
+
+
+#####################################################
+#                    EXERCICE 7                     #
+#####################################################
+
+def graph(inst, n):
+    time = [300, 1200, 2100]
+    score = {}
+    for i in time:
+        print("Debut de la phase avec temps =", i)
+        score[i] = []
+        score[i].append(evaluate(glouton(deepcopy(inst), i)))
+        print("Glouton OK", score[i][0])
+        a = glouton_opti(deepcopy(inst), n, i)
+        score[i].append(evaluate(a))
+        print("Glouton opti OK", score[i][1])
+        score[i].append(desc_best(a, i))
+        print("Descente stochastique OK", score[i][2])
+        score[i].append(algo_g(30, 1000, deepcopy(inst), n, i).eval)
+        print("Algo genetique OK", score[i][3])
+    print(score)
 
 
 #####################################################
@@ -319,10 +434,10 @@ def mutate(s):
 #####################################################
 
 def main(argv):
-    f = "Inputs/c_memorable_moments.txt"
-    #f = "Inputs\\b_lovely_landscapes.txt"
+    #f = "Inputs\\c_memorable_moments.txt"
+    f = "Inputs\\b_lovely_landscapes.txt"
     #f = "Inputs\\a_example.txt"
-    instance = select_p_percent(f, 20)
+    instance = select_p_percent(f, 0.03)
     #sol = Solution(instance, h_before_v, 0, "H_puis_V.sol")
     #sol = Solution(instance, glouton, 0, "glouton.sol")
     #sol = Solution(instance, glouton_opti, 5, "glouton_opt.sol")
@@ -330,10 +445,13 @@ def main(argv):
     #print("Évaluation de la solution de", f, ":", sol.eval)
     #res = desc_best(sol)
     #print("Meilleur score apres descente stochastique :", res)
-    b = algo_g(50, 50, instance, 10)
-    print(b)
+    #b = algo_g(5, 50, instance, 10, 5)
+    #print(b)
     #sol.output()
-    
+    #graph(instance, 100)
+    solveurPL(inst.tabH)
+
+
 
 
 
