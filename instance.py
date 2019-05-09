@@ -3,7 +3,7 @@ from random import *
 class Photo:
     def __init__(self, ori, key_words, p_id):
         self.ori = ori  # Orientation of the picture (H or V)
-        self.key_words = key_words  # List of key words
+        self.key_words = set(key_words)  # List of key words
         self.p_id = p_id  # Picture ID (unique)
 
     def __lt__(self, other):  # Needed for sort

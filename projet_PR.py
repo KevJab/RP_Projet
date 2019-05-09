@@ -5,7 +5,8 @@ from time import time
 from copy import deepcopy
 import sys
 import matplotlib.pyplot as plt
-
+from gurobipy import *
+import numpy as np
 
 #####################################################
 #                    EXERCICE 1                     #
@@ -454,6 +455,8 @@ def mutate2(s):
 def main(argv):
     f = "Inputs\\c_memorable_moments.txt"
     #f = "Inputs\\b_lovely_landscapes.txt"
+    #f = "Inputs\\c_memorable_moments.txt"
+    f = "Inputs/b_lovely_landscapes.txt"
     #f = "Inputs\\a_example.txt"
     instance = select_p_percent(f, 40)
 
@@ -491,6 +494,7 @@ def main(argv):
     sol = s.slides
     print(s.eval)
     output(sol, 'algo_g_desc.sol')
+    solveurPL(instance.tabH)
 
 
 
