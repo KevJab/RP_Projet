@@ -55,6 +55,13 @@ def h_before_v(inst):  # Solution with all horizontal slides before vertical sli
             slides.append(Slide(inst.tabV[i], inst.tabV[i+1]))
     return slides
 
+def output(solution, out_file):  # Writes the solution in the output file
+    sol = open(out_file, 'w+')
+
+    sol.write(str(len(solution)) + "\n")
+    for slide in solution:
+        sol.write(str(slide) + "\n")
+
 
 #####################################################
 #                    EXERCICE 3                     #
@@ -82,7 +89,6 @@ def glouton(inst, max_time = -1):
             inst.tabV.remove(inst.tabV[alea1])
 
     all_permutation = deepcopy(list(combinations(inst.tabV, 2)))  # Allow to have all possible combinations for vertical pictures without double (there are not (1,2) (2,1) only (1,2)
-    print(all_permutation, solution)
 
     a = time()
     b = time()
@@ -114,7 +120,6 @@ def glouton(inst, max_time = -1):
                 all_permutation.remove((i,j))
         solution.append(max_photo)
         b = time()
-    print(solution)
     return solution
 
 
@@ -213,7 +218,7 @@ def desc_best(sol, max_time = -1):
 
         if x == sol_glouton:
             break
-    return x
+    return x, sol
 
 
 def first_neighbors(s, h, x):
@@ -254,7 +259,7 @@ def second_neighbors(s, v, x):
     return None, -1
 
 
-def algo_g(nb_species, nb_generations, inst, n, max_time = -1):
+def algo_g(nb_species, nb_generations, inst, n, max_time = -1, mutation = 1):
     populations = create_species(inst, n, nb_species)  # Initialise the population
     print("Population initialized")
     a = time()
@@ -269,7 +274,10 @@ def algo_g(nb_species, nb_generations, inst, n, max_time = -1):
             populations.append(j)
         for k in populations:
             if random() > 0.5:  # Each specie has a 50% probability to mutate
-                mutate(k)
+                if mutation == 1 :
+                    mutate(k)
+                elif mutation == 2:
+                    mutate2(k)
             print("Fitness of specie", k.name, "is :", k.eval)
         b = time()
         print()
@@ -338,7 +346,7 @@ def mutate(s):
 
 
 #####################################################
-#                    EXERCICE 8                     #
+#                    EXERCICE 5                    #
 #####################################################
 def solveurPL(vignettes):
     # Range of plants and warehouses
@@ -396,7 +404,7 @@ def solveurPL(vignettes):
     obj =0
     for i in range(0,len(vignettes)):
         for j in range(0,len(vignettes)):
-            obj+= score(vignettes,i,j)*x[i*len(vignettes)+j]
+            obj+= score_transition(vignettes[i].key_words,vignettes[j].key_words)*x[i*len(vignettes)+j]
 
     m.setObjective(obj,GRB.MAXIMIZE)
     m.optimize()
@@ -422,7 +430,7 @@ def graph(inst, n):
         a = glouton_opti(deepcopy(inst), n, i)
         score[i].append(evaluate(a))
         print("Glouton opti OK", score[i][1])
-        score[i].append(desc_best(a, i))
+        score[i].append(desc_best(a, i)[0])
         print("Descente stochastique OK", score[i][2])
         score[i].append(algo_g(30, 1000, deepcopy(inst), n, i).eval)
         print("Algo genetique OK", score[i][3])
@@ -430,26 +438,59 @@ def graph(inst, n):
 
 
 #####################################################
+#                    EXERCICE 8                     #
+#####################################################
+
+def mutate2(s):
+    s.slides = desc_best(s.slides)[1]
+    s.eval = evaluate(s.slides)  # We recalculate the score of the presentation of our specie
+    s.name = s.name + str(randint(0, 100))  # We change his name
+
+
+#####################################################
 #                        MAIN                        #
 #####################################################
 
 def main(argv):
-    #f = "Inputs\\c_memorable_moments.txt"
-    f = "Inputs\\b_lovely_landscapes.txt"
+    f = "Inputs\\c_memorable_moments.txt"
+    #f = "Inputs\\b_lovely_landscapes.txt"
     #f = "Inputs\\a_example.txt"
-    instance = select_p_percent(f, 0.03)
-    #sol = Solution(instance, h_before_v, 0, "H_puis_V.sol")
-    #sol = Solution(instance, glouton, 0, "glouton.sol")
-    #sol = Solution(instance, glouton_opti, 5, "glouton_opt.sol")
-    #sol.eval = evaluate(sol.slides)
-    #print("Évaluation de la solution de", f, ":", sol.eval)
-    #res = desc_best(sol)
-    #print("Meilleur score apres descente stochastique :", res)
-    #b = algo_g(5, 50, instance, 10, 5)
-    #print(b)
-    #sol.output()
+    instance = select_p_percent(f, 40)
+
     #graph(instance, 100)
-    solveurPL(inst.tabH)
+    #solveurPL(inst.tabH)
+
+    """
+    #GLOUTON
+    sol = glouton(instance)
+    output(sol, 'glouton.sol')
+    """
+
+    """
+    #GLOUTON OPTIMISE
+    sol = glouton_opti(instance, 100)
+    output(sol, 'glouton_opt.sol')
+    """
+
+    """
+    #DESCENTE STOCHASTIQUE
+    g = glouton_opti(instance, 100)
+    sol = desc_best(g)[1]
+    output(sol, 'desc.sol')
+    """
+
+    """
+    #ALGORITHME GENETIQUE
+    sol = algo_g(50, 20, instance, 100).slides
+    output(sol, 'algo_g.sol')
+    """
+
+
+    #ALGORITHME GENETIQUE + DESCENTE STOCHASTIQUE
+    s = algo_g(10, 20, instance, 100, max_time = 300, mutation = 2)
+    sol = s.slides
+    print(s.eval)
+    output(sol, 'algo_g_desc.sol')
 
 
 
