@@ -349,7 +349,7 @@ def mutate(s):
 #####################################################
 #                    EXERCICE 5                    #
 #####################################################
-def solveurPL(vignettes):
+def solveurPL(vignettes, filename):
     # Range of plants and warehouses
     m = Model("mogplex")
 
@@ -413,7 +413,19 @@ def solveurPL(vignettes):
     print("")
     print('Solution optimale:')
     print("")
-    return x
+    dico = {}
+    output = str(len(vignettes))+"\n0\n"
+    for i in range(len(vignettes)):
+        for j in range(len(vignettes)):
+            if int(x[i*len(vignettes)+j].x) == 1:
+                dico[i] = j
+    courant = dico[0]
+    while courant != 0:
+        output += str(courant)+"\n"
+        courant = dico[courant]
+    
+    f = open(filename, "w")
+    f.write(output)        
 
 
 #####################################################
@@ -488,7 +500,7 @@ def main(argv):
     output(sol, 'algo_g.sol')
     """
 
-	"""
+    """
     #ALGORITHME GENETIQUE + DESCENTE STOCHASTIQUE
     s = algo_g(10, 20, instance, 100, max_time = 300, mutation = 2)
     sol = s.slides
@@ -497,8 +509,8 @@ def main(argv):
     """
     
     #PLNE
-    res = solveurPL(instance.tabH)
-    print(res)
+    solveurPL(instance.tabH, 'plne.sol')
+    
 
 
 
