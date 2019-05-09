@@ -453,12 +453,12 @@ def mutate2(s):
 #####################################################
 
 def main(argv):
-    f = "Inputs\\c_memorable_moments.txt"
+    #f = "Inputs\\c_memorable_moments.txt"
     #f = "Inputs\\b_lovely_landscapes.txt"
     #f = "Inputs\\c_memorable_moments.txt"
     f = "Inputs/b_lovely_landscapes.txt"
     #f = "Inputs\\a_example.txt"
-    instance = select_p_percent(f, 40)
+    instance = select_p_percent(f, 0.03)
 
     #graph(instance, 100)
     #solveurPL(inst.tabH)
@@ -488,13 +488,17 @@ def main(argv):
     output(sol, 'algo_g.sol')
     """
 
-
+	"""
     #ALGORITHME GENETIQUE + DESCENTE STOCHASTIQUE
     s = algo_g(10, 20, instance, 100, max_time = 300, mutation = 2)
     sol = s.slides
     print(s.eval)
     output(sol, 'algo_g_desc.sol')
-    solveurPL(instance.tabH)
+    """
+    
+    #PLNE
+    res = solveurPL(instance.tabH)
+    print(res)
 
 
 
